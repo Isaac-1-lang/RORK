@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "RORK: Worker Attendance & HR Management System",
+    "slug": "rork-worker-attendance-hr-management-system",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/image/heart.png",
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/heart.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.rork.rork-worker-attendance-hr-management-system"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/heart.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "app.rork.rork-worker-attendance-hr-management-system"
+    },
+    "web": {
+      "favicon": "./assets/images/heart.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://rork.com/"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
