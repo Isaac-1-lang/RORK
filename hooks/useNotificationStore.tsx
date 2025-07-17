@@ -2,75 +2,51 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Notification } from '@/types';
-import { mockNotifications } from '@/mocks/notifications';
+import { apiRequest } from '@/utils/api';
+import { useAuthStore } from './useAuthStore';
 
 interface NotificationState {
   notifications: Notification[];
   unreadCount: number;
   isLoading: boolean;
   fetchNotifications: () => Promise<Notification[]>;
-  markAsRead: (notificationId: string) => void;
-  markAllAsRead: () => void;
-  addNotification: (notification: Omit<Notification, 'id' | 'read'>) => void;
+  markAsRead: (notificationId: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+  sendNotification: (userId: string, title: string, message: string) => Promise<void>;
 }
 
 export const useNotificationStore = create<NotificationState>()(
   persist(
     (set, get) => ({
-      notifications: mockNotifications,
-      unreadCount: mockNotifications.filter(n => !n.read).length,
+      notifications: [],
+      unreadCount: 0,
       isLoading: false,
       
       fetchNotifications: async () => {
         set({ isLoading: true });
-        
-        // Simulate API call
-        return new Promise<Notification[]>((resolve) => {
-          setTimeout(() => {
-            const notifications = get().notifications;
-            const unreadCount = notifications.filter(n => !n.read).length;
-            
-            set({ isLoading: false, unreadCount });
-            resolve(notifications);
-          }, 500);
-        });
+        const token = useAuthStore.getState().token;
+        const { notifications } = await apiRequest('/notifications/list', 'GET', undefined, token || undefined);
+        const unreadCount = notifications.filter((n: Notification) => !n.read).length;
+        set({ notifications, unreadCount, isLoading: false });
+        return notifications;
       },
       
-      markAsRead: (notificationId) => {
-        const updatedNotifications = get().notifications.map(notification => {
-          if (notification.id === notificationId) {
-            return { ...notification, read: true };
-          }
-          return notification;
-        });
-        
-        const unreadCount = updatedNotifications.filter(n => !n.read).length;
-        set({ notifications: updatedNotifications, unreadCount });
+      markAsRead: async (notificationId) => {
+        const token = useAuthStore.getState().token;
+        await apiRequest(`/notifications/mark-as-read/${notificationId}`, 'PATCH', {}, token || undefined);
+        await get().fetchNotifications();
       },
       
-      markAllAsRead: () => {
-        const updatedNotifications = get().notifications.map(notification => ({
-          ...notification,
-          read: true,
-        }));
-        
-        set({ notifications: updatedNotifications, unreadCount: 0 });
+      markAllAsRead: async () => {
+        const token = useAuthStore.getState().token;
+        await apiRequest('/notifications/mark-all-as-read', 'PATCH', {}, token || undefined);
+        await get().fetchNotifications();
       },
       
-      addNotification: (notification) => {
-        const newNotification: Notification = {
-          ...notification,
-          id: Date.now().toString(),
-          read: false,
-        };
-        
-        const updatedNotifications = [newNotification, ...get().notifications];
-        const unreadCount = updatedNotifications.filter(n => !n.read).length;
-        
-        set({ 
-          notifications: updatedNotifications,
-          unreadCount,
-        });
+      sendNotification: async (userId, title, message) => {
+        const token = useAuthStore.getState().token;
+        await apiRequest('/notifications/send', 'POST', { userId, title, message }, token || undefined);
+        // Optionally refresh notifications for the recipient
       },
     }),
     {

@@ -74,6 +74,8 @@ export default function Dropdown({
       {label && <Text style={[styles.label, labelStyle]}>{label}</Text>}
       
       <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={label || placeholder}
         style={[
           styles.dropdown,
           error ? styles.dropdownError : null,

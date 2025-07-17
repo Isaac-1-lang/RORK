@@ -43,14 +43,14 @@ export default function AttendanceCard({
   const hasClocked = todayRecord && todayRecord.clockInTime;
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} accessible={true} accessibilityLabel="Attendance card">
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Clock size={20} color={Colors.primary} />
           <Text style={styles.title}>Today's Attendance</Text>
         </View>
         {todayRecord && (
-          <StatusBadge status={todayRecord.status} />
+          <StatusBadge status={todayRecord.status} accessibilityLabel={`Attendance status: ${todayRecord.status}`} />
         )}
       </View>
       
@@ -107,7 +107,7 @@ export default function AttendanceCard({
             style={styles.actionButton}
           />
         ) : (
-          <View style={styles.completedContainer}>
+          <View style={styles.completedContainer} accessibilityRole="status" accessibilityLabel="Attendance completed for today">
             <Text style={styles.completedText}>✓ Attendance completed for today</Text>
           </View>
         )}

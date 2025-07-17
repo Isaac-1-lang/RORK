@@ -43,6 +43,8 @@ export default function Input({
       {label && <Text style={[styles.label, labelStyle]}>{label}</Text>}
       <View style={styles.inputContainer}>
         <TextInput
+          accessibilityLabel={label}
+          accessibilityRole="textbox"
           style={[
             styles.input,
             error ? styles.inputError : null,

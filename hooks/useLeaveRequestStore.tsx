@@ -2,78 +2,43 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LeaveRequest } from '@/types';
-import { mockLeaveRequests } from '@/mocks/leave-requests';
+import { apiRequest } from '@/utils/api';
+import { useAuthStore } from './useAuthStore';
 
 interface LeaveRequestState {
   leaveRequests: LeaveRequest[];
   isLoading: boolean;
   submitLeaveRequest: (request: Omit<LeaveRequest, 'id' | 'createdAt' | 'status'>) => Promise<void>;
-  fetchUserLeaveRequests: (userId: string) => Promise<LeaveRequest[]>;
+  fetchUserLeaveRequests: () => Promise<LeaveRequest[]>;
   updateLeaveRequestStatus: (requestId: string, status: 'approved' | 'rejected') => Promise<void>;
 }
 
 export const useLeaveRequestStore = create<LeaveRequestState>()(
   persist(
     (set, get) => ({
-      leaveRequests: mockLeaveRequests,
+      leaveRequests: [],
       isLoading: false,
       
       submitLeaveRequest: async (request) => {
         set({ isLoading: true });
-        
-        // Simulate API call
-        return new Promise<void>((resolve) => {
-          setTimeout(() => {
-            const newRequest: LeaveRequest = {
-              ...request,
-              id: Date.now().toString(),
-              status: 'pending',
-              createdAt: new Date().toISOString(),
-            };
-            
-            set({ 
-              leaveRequests: [...get().leaveRequests, newRequest],
-              isLoading: false 
-            });
-            
-            resolve();
-          }, 1000);
-        });
+        const token = useAuthStore.getState().token;
+        await apiRequest('/leave-requests/submit', 'POST', request, token || undefined);
+        set({ isLoading: false });
       },
       
-      fetchUserLeaveRequests: async (userId) => {
+      fetchUserLeaveRequests: async () => {
         set({ isLoading: true });
-        
-        // Simulate API call
-        return new Promise<LeaveRequest[]>((resolve) => {
-          setTimeout(() => {
-            const userRequests = get().leaveRequests.filter(
-              request => request.userId === userId
-            );
-            
-            set({ isLoading: false });
-            resolve(userRequests);
-          }, 500);
-        });
+        const token = useAuthStore.getState().token;
+        const { leaveRequests } = await apiRequest('/leave-requests/list', 'GET', undefined, token || undefined);
+        set({ leaveRequests, isLoading: false });
+        return leaveRequests;
       },
       
       updateLeaveRequestStatus: async (requestId, status) => {
         set({ isLoading: true });
-        
-        // Simulate API call
-        return new Promise<void>((resolve) => {
-          setTimeout(() => {
-            const updatedRequests = get().leaveRequests.map(request => {
-              if (request.id === requestId) {
-                return { ...request, status };
-              }
-              return request;
-            });
-            
-            set({ leaveRequests: updatedRequests, isLoading: false });
-            resolve();
-          }, 1000);
-        });
+        const token = useAuthStore.getState().token;
+        await apiRequest(`/leave-requests/update-status/${requestId}`, 'PATCH', { status }, token || undefined);
+        set({ isLoading: false });
       },
     }),
     {

@@ -1,12 +1,14 @@
 import { create } from 'zustand';
 import { User, WorkerRegistrationData } from '@/types';
+import { apiRequest } from '@/utils/api';
+import { useAuthStore } from './useAuthStore';
 
 interface WorkerState {
   workers: User[];
   isLoading: boolean;
   error: string | null;
-  registerWorker: (data: WorkerRegistrationData, hrId: string) => Promise<boolean>;
-  getWorkersByHR: (hrId: string) => User[];
+  registerWorker: (data: WorkerRegistrationData) => Promise<boolean>;
+  getWorkersByHR: (hrId: string) => Promise<User[]>;
   deleteWorker: (workerId: string) => void;
 }
 
@@ -15,52 +17,30 @@ export const useWorkerStore = create<WorkerState>((set, get) => ({
   isLoading: false,
   error: null,
 
-  registerWorker: async (data: WorkerRegistrationData, hrId: string) => {
+  registerWorker: async (data: WorkerRegistrationData) => {
     set({ isLoading: true, error: null });
-    
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Generate unique ID
-      const workerId = `worker_${Date.now()}`;
-      
-      // Create new worker
-      const newWorker: User = {
-        id: workerId,
-        name: data.name,
-        email: data.email || '',
-        role: 'worker',
-        department: data.department,
-        position: data.position,
-        phoneNumber: data.phoneNumber,
-        shiftStartTime: data.shiftStartTime,
-        createdBy: hrId,
-        geoLocation: data.geoLocation,
-        fingerprintCaptured: data.fingerprintCaptured,
-        status: 'active',
-        createdAt: new Date().toISOString(),
-      };
-      
-      // Add to workers list
-      set(state => ({
-        workers: [...state.workers, newWorker],
-        isLoading: false
-      }));
-      
+      const token = useAuthStore.getState().token;
+      await apiRequest('/users/add-worker', 'POST', data, token || undefined);
+      set({ isLoading: false });
       return true;
     } catch (error) {
-      set({ 
-        error: 'Failed to register worker',
-        isLoading: false 
-      });
+      set({ error: 'Failed to register worker', isLoading: false });
       return false;
     }
   },
 
-  getWorkersByHR: (hrId: string) => {
-    const { workers } = get();
-    return workers.filter(worker => worker.createdBy === hrId);
+  getWorkersByHR: async (hrId: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const token = useAuthStore.getState().token;
+      const { workers } = await apiRequest(`/users/list-workers?hrId=${hrId}`, 'GET', undefined, token || undefined);
+      set({ workers, isLoading: false });
+      return workers;
+    } catch (error) {
+      set({ error: 'Failed to fetch workers', isLoading: false });
+      return [];
+    }
   },
 
   deleteWorker: (workerId: string) => {

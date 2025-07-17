@@ -1,10 +1,12 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { mockUsers, User } from '@/mocks/users';
+import { User } from '@/types';
+import { apiRequest } from '@/utils/api';
 
 interface AuthState {
   user: User | null;
+  token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
@@ -15,60 +17,33 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
+      token: null,
       isLoading: false,
       isAuthenticated: false,
 
       login: async (email: string, password: string) => {
         set({ isLoading: true });
-        
         try {
-          // Simulate API call delay
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Find user in mock data
-          const user = mockUsers.find(
-            u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-          );
-          
-          if (user) {
-            set({ 
-              user, 
-              isAuthenticated: true, 
-              isLoading: false 
-            });
-            return true;
-          } else {
-            set({ 
-              user: null, 
-              isAuthenticated: false, 
-              isLoading: false 
-            });
-            return false;
-          }
+          const { token, user } = await apiRequest('/auth/login', 'POST', { email, password });
+          set({ user, token, isAuthenticated: true, isLoading: false });
+          return true;
         } catch (error) {
-          set({ 
-            user: null, 
-            isAuthenticated: false, 
-            isLoading: false 
-          });
+          set({ user: null, token: null, isAuthenticated: false, isLoading: false });
           return false;
         }
       },
 
       logout: () => {
-        set({ 
-          user: null, 
-          isAuthenticated: false, 
-          isLoading: false 
-        });
+        set({ user: null, token: null, isAuthenticated: false, isLoading: false });
       },
     }),
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({ 
-        user: state.user, 
-        isAuthenticated: state.isAuthenticated 
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+        isAuthenticated: state.isAuthenticated
       }),
     }
   )

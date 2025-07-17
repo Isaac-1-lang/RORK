@@ -39,7 +39,8 @@ export default function LoginScreen() {
     
     if (success) {
       // Navigation will be handled by the root layout
-      // router.replace('/(tabs)');
+      router.replace({ pathname: '/(tabs)' });
+
     } else {
       setErrors({
         password: 'Invalid email or password. Try: demo',
@@ -71,7 +72,7 @@ export default function LoginScreen() {
     const success = await login(loginEmail, loginPassword);
     
     if (success) {
-      // router.replace('/(tabs)');
+      router.replace('/(tabs)/index');
     } else {
       setErrors({
         password: 'Quick login failed. Please try manual login.',
@@ -123,12 +124,12 @@ export default function LoginScreen() {
               error={errors.password}
             />
             
-            {/* <Button
+            <Button
               title="Log In"
               onPress={handleLogin}
               isLoading={isLoading}
               style={styles.loginButton}
-            /> */}
+            />
           </View>
         </Card>
         
@@ -136,32 +137,32 @@ export default function LoginScreen() {
           <Text style={styles.quickLoginTitle}>Quick Login Options</Text>
           
           <View style={styles.quickLoginButtons}>
-            {/* <Button
+            <Button
               title="Login as Worker"
               variant="outline"
               size="small"
               onPress={() => handleQuickLogin('worker')}
               style={styles.quickLoginButton}
               disabled={isLoading}
-            /> */}
+            />
             
-            {/* <Button
+            <Button
               title="Login as HR"
               variant="outline"
               size="small"
               onPress={() => handleQuickLogin('hr')}
               style={styles.quickLoginButton}
               disabled={isLoading}
-            /> */}
+            />
 
-            {/* <Button
+            <Button
               title="Login as Admin"
               variant="outline"
               size="small"
               onPress={() => handleQuickLogin('admin')}
               style={styles.quickLoginButton}
               disabled={isLoading}
-            /> */}
+            />
           </View>
           
           <View style={styles.credentialsContainer}>

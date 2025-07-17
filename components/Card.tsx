@@ -9,7 +9,7 @@ interface CardProps {
 
 export default function Card({ children, style }: CardProps) {
   return (
-    <View style={[styles.card, style]}>
+    <View style={[styles.card, style]} accessible={true} accessibilityRole="summary">
       {children}
     </View>
   );
