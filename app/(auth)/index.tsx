@@ -6,7 +6,6 @@ import Input from '@/components/Input';
 import Button from '@/components/Button';
 import Colors from '@/constants/colors';
 import Card from '@/components/Card';
-import { demoCredentials } from '@/mocks/users';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -39,7 +38,7 @@ export default function LoginScreen() {
     
     if (success) {
       // Navigation will be handled by the root layout
-      router.replace({ pathname: '/(tabs)' });
+      router.replace('/');
 
     } else {
       setErrors({
@@ -49,38 +48,6 @@ export default function LoginScreen() {
       Alert.alert(
         "Login Failed",
         "Invalid credentials. Use 'demo' as password for any user.",
-        [{ text: "OK" }]
-      );
-    }
-  };
-
-  const handleQuickLogin = async (userType: 'worker' | 'hr' | 'admin') => {
-    let loginEmail = '';
-    let loginPassword = 'demo';
-    
-    if (userType === 'worker') {
-      loginEmail = demoCredentials.worker.email;
-    } else if (userType === 'hr') {
-      loginEmail = demoCredentials.hr.email;
-    } else if (userType === 'admin') {
-      loginEmail = demoCredentials.admin.email;
-    }
-    
-    setEmail(loginEmail);
-    setPassword(loginPassword);
-    
-    const success = await login(loginEmail, loginPassword);
-    
-    if (success) {
-      router.replace('/(tabs)/index');
-    } else {
-      setErrors({
-        password: 'Quick login failed. Please try manual login.',
-      });
-      
-      Alert.alert(
-        "Quick Login Failed",
-        `Quick login attempt failed for ${userType} (${loginEmail}). Please try manual login.`,
         [{ text: "OK" }]
       );
     }
@@ -117,7 +84,7 @@ export default function LoginScreen() {
             
             <Input
               label="Password"
-              placeholder="Enter your password (use: demo)"
+              placeholder="Enter your password"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -132,47 +99,6 @@ export default function LoginScreen() {
             />
           </View>
         </Card>
-        
-        <View style={styles.quickLoginContainer}>
-          <Text style={styles.quickLoginTitle}>Quick Login Options</Text>
-          
-          <View style={styles.quickLoginButtons}>
-            <Button
-              title="Login as Worker"
-              variant="outline"
-              size="small"
-              onPress={() => handleQuickLogin('worker')}
-              style={styles.quickLoginButton}
-              disabled={isLoading}
-            />
-            
-            <Button
-              title="Login as HR"
-              variant="outline"
-              size="small"
-              onPress={() => handleQuickLogin('hr')}
-              style={styles.quickLoginButton}
-              disabled={isLoading}
-            />
-
-            <Button
-              title="Login as Admin"
-              variant="outline"
-              size="small"
-              onPress={() => handleQuickLogin('admin')}
-              style={styles.quickLoginButton}
-              disabled={isLoading}
-            />
-          </View>
-          
-          <View style={styles.credentialsContainer}>
-            <Text style={styles.credentialsTitle}>Demo Credentials:</Text>
-            <Text style={styles.credentials}>Worker: {demoCredentials.worker.email} / demo</Text>
-            <Text style={styles.credentials}>HR: {demoCredentials.hr.email} / demo</Text>
-            <Text style={styles.credentials}>Admin: {demoCredentials.admin.email} / demo</Text>
-            <Text style={styles.note}>Password for all users: demo</Text>
-          </View>
-        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -219,47 +145,5 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     marginTop: 16,
-  },
-  quickLoginContainer: {
-    alignItems: 'center',
-  },
-  quickLoginTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: Colors.text,
-    marginBottom: 16,
-  },
-  quickLoginButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 16,
-  },
-  quickLoginButton: {
-    minWidth: 120,
-  },
-  credentialsContainer: {
-    backgroundColor: 'rgba(37, 99, 235, 0.1)',
-    padding: 16,
-    borderRadius: 8,
-    width: '100%',
-  },
-  credentialsTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.text,
-    marginBottom: 8,
-  },
-  credentials: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginBottom: 4,
-  },
-  note: {
-    fontSize: 12,
-    color: Colors.primary,
-    fontWeight: '500',
-    marginTop: 8,
   },
 });
