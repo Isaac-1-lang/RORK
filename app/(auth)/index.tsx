@@ -43,12 +43,12 @@ export default function LoginScreen() {
 
     } else {
       setErrors({
-        password: 'Invalid email or password. Try: demo',
+        password: 'Invalid email or password.',
       });
       
       Alert.alert(
         "Login Failed",
-        "Invalid credentials. Use 'demo' as password for any user.",
+        "Invalid credentials.",
         [{ text: "OK" }]
       );
     }
