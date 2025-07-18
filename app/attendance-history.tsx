@@ -3,12 +3,12 @@ import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { useAuthStore } from '@/hooks/useAuthStore';
 import { useAttendanceStore } from '@/hooks/useAttendanceStore';
 import { Attendance } from '@/types';
-import AttendanceCard from '@/components/AttendanceCard';
+import AttendanceCard from '@/components/attendanceCard';
 import Colors from '@/constants/colors';
 
 export default function AttendanceHistoryScreen() {
   const { user } = useAuthStore();
-  const { fetchUserAttendance, isLoading } = useAttendanceStore();
+  const { fetchAttendanceHistory, attendanceRecords, isLoading } = useAttendanceStore();
   const [attendance, setAttendance] = useState<Attendance[]>([]);
 
   useEffect(() => {
@@ -19,13 +19,11 @@ export default function AttendanceHistoryScreen() {
 
   const loadAttendance = async () => {
     if (!user) return;
-    
-    const records = await fetchUserAttendance(user.id);
+    await fetchAttendanceHistory();
     // Sort by date (most recent first)
-    const sorted = [...records].sort((a, b) => 
+    const sorted = [...attendanceRecords].sort((a, b) => 
       new Date(b.date).getTime() - new Date(a.date).getTime()
     );
-    
     setAttendance(sorted);
   };
 
@@ -66,7 +64,14 @@ export default function AttendanceHistoryScreen() {
             <View style={styles.section}>
               {renderSectionHeader(item)}
               {item.data.map((record) => (
-                <AttendanceCard key={record.id} attendance={record} />
+                <AttendanceCard
+                  key={record.id}
+                  todayRecord={record}
+                  onClockIn={() => {}}
+                  onClockOut={() => {}}
+                  isLoading={false}
+                  canClockIn={true}
+                />
               ))}
             </View>
           )}

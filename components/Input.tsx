@@ -44,7 +44,7 @@ export default function Input({
       <View style={styles.inputContainer}>
         <TextInput
           accessibilityLabel={label}
-          accessibilityRole="textbox"
+          accessibilityRole="text"
           style={[
             styles.input,
             error ? styles.inputError : null,

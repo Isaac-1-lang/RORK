@@ -9,10 +9,10 @@ import { useAttendanceStore } from '@/hooks/useAttendanceStore';
 import { useLocationStore } from '@/hooks/useLocationStore';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
-import FingerprintButton from '@/components/FingerprintButton';
+import FingerprintButton from '@/components/FingerPrint';
 import { CheckCircle, MapPin, AlertTriangle, Clock } from 'lucide-react-native';
 import Colors from '@/constants/colors';
-import { getLocationStatus } from '@/utils/geofencing';
+import { getLocationStatus } from '@/utils/geofancing';
 import { mockWorkLocations } from '@/mocks/locations';
 
 type VerificationStep = 'fingerprint' | 'location' | 'processing' | 'success' | 'error';
@@ -167,9 +167,9 @@ export default function AttendanceVerificationScreen() {
     
     try {
       if (action === 'clock-in') {
-        await clockIn(user.id);
+        await clockIn();
       } else {
-        await clockOut(user.id);
+        await clockOut();
       }
       
       setCurrentStep('success');

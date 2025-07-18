@@ -7,7 +7,7 @@ import { useLocationStore } from '@/hooks/useLocationStore';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
 import LocationIndicator from '@/components/LocationIndicator';
-import AttendanceCard from '@/components/AttendanceCard';
+import AttendanceCard from '@/components/attendanceCard';
 import Colors from '@/constants/colors';
 
 export default function HomeScreen() {

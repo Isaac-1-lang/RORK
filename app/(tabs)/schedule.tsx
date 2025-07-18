@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useAuthStore } from '@/hooks/useAuthStore';
 import { useAttendanceStore } from '@/hooks/useAttendanceStore';
 import { Attendance } from '@/types';
-import AttendanceCard from '@/components/AttendanceCard';
+import AttendanceCard from '@/components/attendanceCard';
 import Button from '@/components/Button';
 import Colors from '@/constants/colors';
 import { router } from 'expo-router';

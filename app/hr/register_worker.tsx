@@ -17,9 +17,9 @@ import { useLocationStore } from '@/hooks/useLocationStore';
 import { useWorkerStore } from '@/hooks/useWorkerStore';
 import Input from '@/components/Input';
 import Button from '@/components/Button';
-import Dropdown from '@/components/Dropdown';
+import DropDown from '@/components/DropDown';
 import TimePicker from '@/components/TimePicker';
-import FingerprintButton from '@/components/FingerprintButton';
+import FingerprintButton from '@/components/FingerPrint';
 import { mockDepartments } from '@/mocks/departments';
 import { mockPositions } from '@/mocks/positions';
 import { MapPin, CheckCircle } from 'lucide-react-native';
@@ -207,7 +207,7 @@ export default function RegisterWorkerScreen() {
       fingerprintCaptured,
     };
     
-    const success = await registerWorker(registrationData, user.id);
+    const success = await registerWorker(registrationData);
     
     if (success) {
       Alert.alert(
@@ -291,7 +291,7 @@ export default function RegisterWorkerScreen() {
             error={errors.email}
           />
           
-          <Dropdown
+          <DropDown
             label="Department *"
             placeholder="Select department"
             options={departmentOptions}
@@ -300,7 +300,7 @@ export default function RegisterWorkerScreen() {
             error={errors.department}
           />
           
-          <Dropdown
+          <DropDown
             label="Job Position *"
             placeholder="Select position"
             options={positionOptions}
@@ -312,10 +312,8 @@ export default function RegisterWorkerScreen() {
           
           <TimePicker
             label="Shift Start Time *"
-            placeholder="Select start time"
             value={formData.shiftStartTime}
-            onTimeSelect={(time) => handleInputChange('shiftStartTime', time)}
-            error={errors.shiftStartTime}
+            onChange={(time) => handleInputChange('shiftStartTime', time)}
           />
           
           <View style={styles.locationContainer}>
@@ -351,7 +349,6 @@ export default function RegisterWorkerScreen() {
                   onPress={getCurrentLocation}
                   isLoading={locationLoading}
                   variant="outline"
-                  size="small"
                   style={styles.locationButton}
                 />
               </View>
