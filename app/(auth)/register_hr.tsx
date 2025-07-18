@@ -6,29 +6,63 @@ import Button from '@/components/Button';
 import Colors from '@/constants/colors';
 import Card from '@/components/Card';
 import { registerHR } from '@/utils/api';
+import { useAuthStore } from '@/hooks/useAuthStore';
+import MapView, { Marker, MapPressEvent } from 'react-native-maps';
+import { Dimensions } from 'react-native';
+
+// Define types for form and errors
+interface RegisterHRForm {
+  name: string;
+  email: string;
+  password: string;
+  mockPayment: boolean;
+  latitude: number | null;
+  longitude: number | null;
+}
+interface RegisterHRErrors {
+  name?: string;
+  email?: string;
+  password?: string;
+  mockPayment?: string;
+  latitude?: string;
+  longitude?: string;
+}
 
 export default function RegisterHRScreen() {
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<RegisterHRForm>({
     name: '',
     email: '',
     password: '',
     mockPayment: false,
+    latitude: null,
+    longitude: null,
   });
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<RegisterHRErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuthStore();
 
-  const handleChange = (field, value) => {
+  const handleChange = (field: keyof RegisterHRForm, value: string | boolean) => {
     setForm(prev => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
+  const handleMapPress = (e: MapPressEvent) => {
+    const { latitude, longitude } = e.nativeEvent.coordinate;
+    setForm(prev => ({ ...prev, latitude, longitude }));
+    if (errors.latitude || errors.longitude) setErrors(prev => ({ ...prev, latitude: '', longitude: '' }));
+  };
+
   const validate = () => {
-    const newErrors = {};
+    const newErrors: RegisterHRErrors = {};
     if (!form.name.trim()) newErrors.name = 'Name is required';
     if (!form.email.trim()) newErrors.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(form.email)) newErrors.email = 'Invalid email';
     if (!form.password) newErrors.password = 'Password is required';
     if (!form.mockPayment) newErrors.mockPayment = 'Payment is required';
+    if (form.latitude == null || form.longitude == null) {
+      newErrors.latitude = 'Company location is required';
+      newErrors.longitude = 'Company location is required';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -37,15 +71,17 @@ export default function RegisterHRScreen() {
     if (!validate()) return;
     setIsLoading(true);
     try {
-      await registerHR(form);
-      Alert.alert('Success', 'HR registered successfully! You can now log in.', [
-        { text: 'OK', onPress: () => router.replace('/(auth)') }
-      ]);
-    } catch (err) {
+      await registerHR(form); // Register the user
+      // Immediately log in the user using the same credentials
+      await login(form.email, form.password);
+      router.replace('/hr');
+    } catch (err: any) {
       Alert.alert('Registration Failed', err?.message || 'An error occurred.');
     }
     setIsLoading(false);
   };
+
+  const SCREEN_WIDTH = Dimensions.get('window').width;
 
   return (
     <KeyboardAvoidingView
@@ -89,9 +125,28 @@ export default function RegisterHRScreen() {
             activeOpacity={0.7}
           >
             <View style={[styles.checkbox, form.mockPayment && styles.checkboxChecked]} />
-            <Text style={styles.paymentLabel}>I have completed payment (mock)</Text>
+            <Text style={styles.paymentLabel}>I have completed payment</Text>
           </TouchableOpacity>
           {errors.mockPayment && <Text style={styles.error}>{errors.mockPayment}</Text>}
+
+          {/* Map Picker for Company Location */}
+          <Text style={styles.label}>Select Company Location</Text>
+          <MapView
+            style={{ width: '100%', height: SCREEN_WIDTH * 0.6, borderRadius: 12, marginVertical: 12 }}
+            initialRegion={{
+              latitude: form.latitude || 0.3476,
+              longitude: form.longitude || 32.5825,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            }}
+            onPress={handleMapPress}
+          >
+            {form.latitude && form.longitude && (
+              <Marker coordinate={{ latitude: form.latitude, longitude: form.longitude }} />
+            )}
+          </MapView>
+          {(errors.latitude || errors.longitude) && <Text style={styles.error}>{errors.latitude || errors.longitude}</Text>}
+
           <Button
             title="Register"
             onPress={handleRegister}
@@ -122,4 +177,5 @@ const styles = StyleSheet.create({
   error: { color: Colors.error, fontSize: 14, marginTop: 4 },
   loginLink: { marginTop: 16, alignItems: 'center' },
   loginText: { color: Colors.primary, fontSize: 16, fontWeight: '500' },
+  label: { fontSize: 16, color: Colors.text, marginBottom: 8, fontWeight: '500' },
 }); 

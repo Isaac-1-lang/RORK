@@ -13,7 +13,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   
-  const { login, isLoading } = useAuthStore();
+  const { login, isLoading, user } = useAuthStore();
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -38,9 +38,12 @@ export default function LoginScreen() {
     const success = await login(email, password);
     
     if (success) {
-      // Navigation will be handled by the root layout
-      router.replace('/');
-
+      // Navigate to HR dashboard if user is HR
+      if (user && user.role === 'hr') {
+        router.replace('/hr');
+      } else {
+        router.replace('/');
+      }
     } else {
       setErrors({
         password: 'Invalid email or password.',

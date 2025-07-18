@@ -1,128 +1,168 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, Animated, Easing, TouchableOpacity, Dimensions, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/hooks/useAuthStore';
 import { useLeaveRequestStore } from '@/hooks/useLeaveRequestStore';
 import { useWorkerStore } from '@/hooks/useWorkerStore';
+import { useNotificationStore } from '@/hooks/useNotificationStore';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
-import { UserPlus, FileText, Calendar, Bell, Users, Clock } from 'lucide-react-native';
+import { Bell, UserCircle, UserPlus, FileText, Calendar, Users, Clock, AlertCircle } from 'lucide-react-native';
 import Colors from '@/constants/colors';
+import { User } from '@/types';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function HRDashboardScreen() {
   const { user } = useAuthStore();
   const { leaveRequests } = useLeaveRequestStore();
   const { getWorkersByHR } = useWorkerStore();
-  
+  const { notifications, unreadCount } = useNotificationStore();
+  const [myWorkers, setMyWorkers] = useState<User[]>([]);
+  const [fadeAnim] = useState(new Animated.Value(0));
+
+  useEffect(() => {
+    const fetchWorkers = async () => {
+      if (user) {
+        const workers = await getWorkersByHR(user.id);
+        setMyWorkers(workers);
+      }
+    };
+    fetchWorkers();
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 800,
+      easing: Easing.out(Easing.exp),
+      useNativeDriver: true,
+    }).start();
+  }, [user, getWorkersByHR]);
+
   // Count pending leave requests
   const pendingLeaveRequests = leaveRequests.filter(
     request => request.status === 'pending'
   ).length;
 
-  // Get workers managed by this HR
-  const myWorkers = user ? getWorkersByHR(user.id) : [];
   const totalWorkers = myWorkers.length;
 
-  if (user?.role !== 'hr') {
-    return (
-      <View style={styles.unauthorizedContainer}>
-        <Text style={styles.unauthorizedText}>
-          You don't have permission to access the HR dashboard.
-        </Text>
-        <Button
-          title="Go Back"
-          onPress={() => router.back()}
-          style={styles.backButton}
-        />
-      </View>
-    );
-  }
+  // Recent activity (mocked for now)
+  const recentActivity = [
+    ...myWorkers.slice(-2).map(worker => ({
+      type: 'worker',
+      name: worker.name,
+      time: 'Just now',
+      avatar: worker.profileImage || undefined,
+    })),
+    ...leaveRequests.slice(-2).map(req => ({
+      type: 'leave',
+      name: req.userName,
+      time: 'Today',
+      avatar: undefined,
+    })),
+  ];
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Text style={styles.greeting}>Welcome back,</Text>
-        <Text style={styles.name}>{user.name}</Text>
-        <Text style={styles.role}>HR Manager • {user.department}</Text>
-      </View>
-      
-      <View style={styles.statsContainer}>
-        <Card style={styles.statCard}>
-          <View style={styles.statIcon}>
-            <Users size={24} color={Colors.primary} />
-          </View>
-          <Text style={styles.statValue}>{totalWorkers}</Text>
-          <Text style={styles.statLabel}>My Workers</Text>
-        </Card>
-        
-        <Card style={styles.statCard}>
-          <View style={styles.statIcon}>
-            <Calendar size={24} color={Colors.warning} />
-          </View>
-          <Text style={styles.statValue}>{pendingLeaveRequests}</Text>
-          <Text style={styles.statLabel}>Pending Requests</Text>
-        </Card>
-        
-        <Card style={styles.statCard}>
-          <View style={styles.statIcon}>
-            <Clock size={24} color={Colors.error} />
-          </View>
-          <Text style={styles.statValue}>3</Text>
-          <Text style={styles.statLabel}>Late Today</Text>
-        </Card>
-      </View>
-      
-      <View style={styles.quickActions}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        
-        <View style={styles.actionsGrid}>
-          <Button
-            title="Register Worker"
-            onPress={() => router.push('/hr/register-worker')}
-            style={[styles.actionButton, styles.primaryAction]}
-            icon={<UserPlus size={20} color="white" />}
-          />
-          
-          <Button
-            title="Leave Requests"
-            onPress={() => router.push('/hr/leave-requests')}
-            style={[styles.actionButton, styles.secondaryAction]}
-            variant="outline"
-            icon={<Calendar size={20} color={Colors.primary} />}
-          />
+      {/* Notifications Banner */}
+      {unreadCount > 0 && (
+        <View style={styles.notificationBanner}>
+          <Bell size={20 * (SCREEN_WIDTH / 375)} color={Colors.primary} />
+          <Text style={styles.notificationText}>You have {unreadCount} unread notification{unreadCount > 1 ? 's' : ''}!</Text>
         </View>
-        
-        <View style={styles.actionsGrid}>
-          <Button
-            title="Attendance Reports"
-            onPress={() => router.push('/hr/reports')}
-            style={[styles.actionButton, styles.secondaryAction]}
-            variant="outline"
-            icon={<FileText size={20} color={Colors.primary} />}
+      )}
+
+      {/* Welcome Section */}
+      <View style={styles.header}>
+        <View style={styles.avatarRow}>
+          <Image
+            source={{ uri: (user?.profileImage || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user?.name || 'HR')) }}
+            style={[styles.avatar, { width: SCREEN_WIDTH * 0.14, height: SCREEN_WIDTH * 0.14, borderRadius: SCREEN_WIDTH * 0.07 }]}
           />
-          
-          <Button
-            title="Send Notifications"
-            onPress={() => {
-              // TODO: Implement notification sending
-              alert('Notification feature coming soon!');
-            }}
-            style={[styles.actionButton, styles.secondaryAction]}
-            variant="outline"
-            icon={<Bell size={20} color={Colors.primary} />}
-          />
+          <View style={styles.headerText}>
+            <Text style={[styles.greeting, { fontSize: SCREEN_WIDTH < 350 ? 13 : 16 }]}>Welcome back,</Text>
+            <Text style={[styles.name, { fontSize: SCREEN_WIDTH < 350 ? 20 : 28 }]}>{user?.name || 'HR'}</Text>
+            <Text style={[styles.role, { fontSize: SCREEN_WIDTH < 350 ? 12 : 14 }]}>HR Manager{user?.department ? ` • ${user.department}` : ''}</Text>
+          </View>
         </View>
       </View>
 
-      {totalWorkers > 0 && (
-        <View style={styles.recentActivity}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-          <Card style={styles.activityCard}>
-            <Text style={styles.activityText}>
-              You have {totalWorkers} registered workers in your department
-            </Text>
-            <Text style={styles.activityTime}>Updated just now</Text>
+      {/* Responsive Horizontal Stats Cards */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsScroll} contentContainerStyle={styles.statsScrollContent}>
+        <Animated.View style={[styles.statsContainer, { opacity: fadeAnim, transform: [{ scale: fadeAnim }] }]}> 
+          <Card style={[styles.statCard, { minWidth: SCREEN_WIDTH * 0.5, maxWidth: SCREEN_WIDTH * 0.7 }]}> 
+            <View style={styles.statIcon}><Users size={24 * (SCREEN_WIDTH / 375)} color={Colors.primary} /></View>
+            <Text style={[styles.statValue, { fontSize: SCREEN_WIDTH < 350 ? 18 : 24 }]}>{totalWorkers}</Text>
+            <Text style={styles.statLabel}>My Workers</Text>
           </Card>
+          <Card style={[styles.statCard, { minWidth: SCREEN_WIDTH * 0.5, maxWidth: SCREEN_WIDTH * 0.7 }]}> 
+            <View style={styles.statIcon}><Calendar size={24 * (SCREEN_WIDTH / 375)} color={Colors.warning} /></View>
+            <Text style={[styles.statValue, { fontSize: SCREEN_WIDTH < 350 ? 18 : 24 }]}>{pendingLeaveRequests}</Text>
+            <Text style={styles.statLabel}>Pending Requests</Text>
+          </Card>
+          <Card style={[styles.statCard, { minWidth: SCREEN_WIDTH * 0.5, maxWidth: SCREEN_WIDTH * 0.7 }]}> 
+            <View style={styles.statIcon}><Clock size={24 * (SCREEN_WIDTH / 375)} color={Colors.error} /></View>
+            <Text style={[styles.statValue, { fontSize: SCREEN_WIDTH < 350 ? 18 : 24 }]}>3</Text>
+            <Text style={styles.statLabel}>Late Today</Text>
+          </Card>
+        </Animated.View>
+      </ScrollView>
+
+      {/* Quick Actions - Responsive Grid */}
+      <View style={styles.quickActions}>
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <View style={[styles.actionsGrid, { flexDirection: SCREEN_WIDTH < 400 ? 'column' : 'row', gap: SCREEN_WIDTH < 400 ? 12 : 16 }]}> 
+          <TouchableOpacity style={[styles.actionButton, styles.primaryAction, { width: SCREEN_WIDTH < 400 ? '100%' : '48%' }]} onPress={() => router.push('/hr/register_worker')}>
+            <UserPlus size={20 * (SCREEN_WIDTH / 375)} color="white" />
+            <Text style={styles.actionButtonText}>Register Worker</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.actionButton, styles.secondaryAction, { width: SCREEN_WIDTH < 400 ? '100%' : '48%' }]} onPress={() => router.push('/hr/leave-requests')}>
+            <Calendar size={20 * (SCREEN_WIDTH / 375)} color={Colors.primary} />
+            <Text style={styles.actionButtonText}>Leave Requests</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={[styles.actionsGrid, { flexDirection: SCREEN_WIDTH < 400 ? 'column' : 'row', gap: SCREEN_WIDTH < 400 ? 12 : 16 }]}> 
+          <TouchableOpacity style={[styles.actionButton, styles.secondaryAction, { width: SCREEN_WIDTH < 400 ? '100%' : '48%' }]} onPress={() => router.push('/hr/reports')}>
+            <FileText size={20 * (SCREEN_WIDTH / 375)} color={Colors.primary} />
+            <Text style={styles.actionButtonText}>Attendance Reports</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.actionButton, styles.secondaryAction, { width: SCREEN_WIDTH < 400 ? '100%' : '48%' }]} onPress={() => alert('Notification feature coming soon!')}>
+            <Bell size={20 * (SCREEN_WIDTH / 375)} color={Colors.primary} />
+            <Text style={styles.actionButtonText}>Send Notifications</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Recent Activity Feed - Responsive */}
+      <View style={styles.recentActivity}>
+        <Text style={styles.sectionTitle}>Recent Activity</Text>
+        {recentActivity.length === 0 ? (
+          <View style={styles.emptyState}>
+            <AlertCircle size={40 * (SCREEN_WIDTH / 375)} color={Colors.textSecondary} />
+            <Text style={styles.emptyText}>No recent activity yet.</Text>
+          </View>
+        ) : (
+          recentActivity.map((item, idx) => (
+            <Card key={idx} style={[styles.activityCard, { flexDirection: SCREEN_WIDTH < 400 ? 'column' : 'row', alignItems: 'center' }]}> 
+              <View style={styles.activityRow}>
+                <Image
+                  source={{ uri: item.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(item.name) }}
+                  style={[styles.activityAvatar, { width: SCREEN_WIDTH * 0.09, height: SCREEN_WIDTH * 0.09, borderRadius: SCREEN_WIDTH * 0.045 }]}
+                />
+                <View style={styles.activityInfo}>
+                  <Text style={[styles.activityName, { fontSize: SCREEN_WIDTH < 350 ? 12 : 14 }]}>{item.name}</Text>
+                  <Text style={[styles.activityType, { fontSize: SCREEN_WIDTH < 350 ? 10 : 12 }]}>{item.type === 'worker' ? 'New Worker' : 'Leave Request'}</Text>
+                </View>
+                <Text style={[styles.activityTime, { fontSize: SCREEN_WIDTH < 350 ? 10 : 12 }]}>{item.time}</Text>
+              </View>
+            </Card>
+          ))
+        )}
+      </View>
+
+      {/* Empty State for Workers */}
+      {totalWorkers === 0 && (
+        <View style={styles.emptyState}>
+          <UserCircle size={48 * (SCREEN_WIDTH / 375)} color={Colors.textSecondary} />
+          <Text style={styles.emptyText}>No workers registered yet. Start by adding your first worker!</Text>
         </View>
       )}
     </ScrollView>
@@ -140,6 +180,19 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 32,
+  },
+  avatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
+  },
+  headerText: {
+    flex: 1,
   },
   greeting: {
     fontSize: 16,
@@ -202,14 +255,25 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   actionButton: {
-    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    gap: 8,
+  },
+  actionButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text,
   },
   primaryAction: {
     backgroundColor: Colors.primary,
   },
   secondaryAction: {
     borderColor: Colors.primary,
+    borderWidth: 1,
   },
   recentActivity: {
     marginBottom: 20,
@@ -217,14 +281,51 @@ const styles = StyleSheet.create({
   activityCard: {
     padding: 16,
   },
-  activityText: {
+  activityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  activityAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginRight: 12,
+  },
+  activityInfo: {
+    flex: 1,
+  },
+  activityName: {
     fontSize: 14,
+    fontWeight: '500',
     color: Colors.text,
-    marginBottom: 8,
+  },
+  activityType: {
+    fontSize: 12,
+    color: Colors.textSecondary,
   },
   activityTime: {
     fontSize: 12,
     color: Colors.textSecondary,
+  },
+  notificationBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3CD',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 20,
+    alignSelf: 'center',
+    width: '90%',
+    borderLeftWidth: 5,
+    borderLeftColor: Colors.warning,
+  },
+  notificationText: {
+    fontSize: 14,
+    color: Colors.warning,
+    marginLeft: 8,
+    flex: 1,
   },
   unauthorizedContainer: {
     flex: 1,
@@ -242,5 +343,22 @@ const styles = StyleSheet.create({
   },
   backButton: {
     width: 200,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 30,
+    marginTop: 20,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  statsScroll: {
+    marginBottom: 32,
+  },
+  statsScrollContent: {
+    paddingHorizontal: 10, // Add some horizontal padding for scrollable cards
   },
 });

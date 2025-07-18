@@ -29,6 +29,7 @@ export default function AttendanceVerificationScreen() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [locationStatus, setLocationStatus] = useState<any>(null);
+  const [hoursWorked, setHoursWorked] = useState<number | null>(null);
 
   useEffect(() => {
     // Check biometric availability
@@ -168,8 +169,10 @@ export default function AttendanceVerificationScreen() {
     try {
       if (action === 'clock-in') {
         await clockIn();
+        setHoursWorked(null);
       } else {
-        await clockOut();
+        const totalHours = await clockOut();
+        if (typeof totalHours === 'number') setHoursWorked(totalHours);
       }
       
       setCurrentStep('success');
@@ -281,6 +284,11 @@ export default function AttendanceVerificationScreen() {
                   hour12: true,
                 })}
               </Text>
+              {action === 'clock-out' && hoursWorked !== null && (
+                <Text style={styles.successTime}>
+                  Hours worked: {hoursWorked.toFixed(2)}
+                </Text>
+              )}
             </View>
           </View>
         );
