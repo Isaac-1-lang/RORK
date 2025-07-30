@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
-import { useAuthStore } from '@/hooks/useAuthStore';
+import { useSession } from '@/hooks/useSession';
 import Input from '@/components/Input';
 import Button from '@/components/Button';
 import Colors from '@/constants/colors';
@@ -13,7 +13,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   
-  const { login, isLoading, user } = useAuthStore();
+  const { login, isLoading, user } = useSession();
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};

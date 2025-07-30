@@ -1,36 +1,23 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, Alert, Platform } from 'react-native';
-import { useAuthStore } from '@/hooks/useAuthStore';
+import { useSession } from '@/hooks/useSession';
 import Button from '@/components/Button';
 import Card from '@/components/Card';
-import { LogOut, User, Calendar, Bell, Settings } from 'lucide-react-native';
+import { LogOut, User, Calendar, Bell, Settings, Clock, RefreshCw } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { router } from 'expo-router';
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuthStore();
+  const { 
+    user, 
+    logout, 
+    getSessionInfo
+  } = useSession();
+
+  const sessionInfo = getSessionInfo();
 
   const handleLogout = () => {
-    if (Platform.OS === 'web') {
-      logout();
-      return;
-    }
-    
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Logout',
-          onPress: () => logout(),
-          style: 'destructive',
-        },
-      ]
-    );
+    logout(); // This now includes confirmation dialog
   };
 
   const menuItems = [
@@ -83,6 +70,22 @@ export default function ProfileScreen() {
           </View>
         ))}
       </Card>
+
+      {sessionInfo && (
+        <Card style={styles.sessionCard}>
+          <Text style={styles.sessionTitle}>Session Information</Text>
+          <View style={styles.sessionItem}>
+            <Clock size={16} color={Colors.textSecondary} />
+            <Text style={styles.sessionText}>
+              Last login: {sessionInfo.lastLogin}
+            </Text>
+          </View>
+          <View style={styles.sessionItem}>
+            <RefreshCw size={16} color={Colors.textSecondary} />
+            <Text style={styles.sessionText}>Status: Active</Text>
+          </View>
+        </Card>
+      )}
       
       {user.role === 'hr' && (
         <Button
@@ -164,5 +167,35 @@ const styles = StyleSheet.create({
   },
   logoutButtonText: {
     color: Colors.error,
+  },
+  sessionCard: {
+    marginBottom: 24,
+  },
+  sessionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.text,
+    marginBottom: 16,
+  },
+  sessionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sessionText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginLeft: 8,
+  },
+  warningItem: {
+    marginBottom: 12,
+  },
+  warningText: {
+    fontSize: 14,
+    color: Colors.error,
+    fontWeight: '500',
+  },
+  refreshButton: {
+    marginTop: 8,
   },
 });
