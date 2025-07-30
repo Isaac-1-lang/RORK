@@ -11,11 +11,14 @@ interface AuthState {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  validateSession: () => boolean;
+  clearSession: () => void;
+  updateUser: (userData: Partial<User>) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
       isLoading: false,
@@ -24,17 +27,61 @@ export const useAuthStore = create<AuthState>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true });
         try {
-          const { token, user } = await apiRequest('/auth/login', 'POST', { email, password });
-          set({ user, token, isAuthenticated: true, isLoading: false });
+          const response = await apiRequest('/auth/login', 'POST', { email, password });
+          const { token, user } = response;
+          
+          set({ 
+            user, 
+            token, 
+            isAuthenticated: true, 
+            isLoading: false
+          });
+          
+          await AsyncStorage.setItem('auth_token', token);
+          
           return true;
         } catch (error) {
-          set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+          console.error('Login error:', error);
+          set({ 
+            user: null, 
+            token: null, 
+            isAuthenticated: false, 
+            isLoading: false
+          });
           return false;
         }
       },
 
       logout: () => {
-        set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+        get().clearSession();
+      },
+
+      validateSession: () => {
+        const { token, isAuthenticated } = get();
+        
+        if (!token || !isAuthenticated) {
+          return false;
+        }
+        
+        return true;
+      },
+
+      clearSession: () => {
+        set({ 
+          user: null, 
+          token: null, 
+          isAuthenticated: false, 
+          isLoading: false
+        });
+        
+        AsyncStorage.multiRemove(['auth_token', 'auth-storage']);
+      },
+
+      updateUser: (userData: Partial<User>) => {
+        const { user } = get();
+        if (user) {
+          set({ user: { ...user, ...userData } });
+        }
       },
     }),
     {
