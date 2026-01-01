@@ -103,6 +103,9 @@ export default function LoginScreen() {
             <TouchableOpacity onPress={() => router.push('/(auth)/register_hr')} style={styles.registerLink}>
               <Text style={styles.registerText}>Don't have an account? <Text style={styles.registerTextBold}>Register as HR</Text></Text>
             </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/(auth)/otp_login')} style={styles.registerLink}>
+              <Text style={styles.registerText}>First time? <Text style={styles.registerTextBold}>Use OTP</Text></Text>
+            </TouchableOpacity>
           </View>
         </Card>
       </ScrollView>
