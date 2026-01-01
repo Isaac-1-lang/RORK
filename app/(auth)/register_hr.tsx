@@ -9,6 +9,8 @@ import { registerHR } from '@/utils/api';
 import { useAuthStore } from '@/hooks/useAuthStore';
 import MapView, { Marker, MapPressEvent } from 'react-native-maps';
 import { Dimensions } from 'react-native';
+import * as Location from 'expo-location';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 // Define types for form and errors
 interface RegisterHRForm {
@@ -40,6 +42,9 @@ export default function RegisterHRScreen() {
   const [errors, setErrors] = useState<RegisterHRErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuthStore();
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [locationSuccess, setLocationSuccess] = useState(false);
 
   const handleChange = (field: keyof RegisterHRForm, value: string | boolean) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -49,7 +54,31 @@ export default function RegisterHRScreen() {
   const handleMapPress = (e: MapPressEvent) => {
     const { latitude, longitude } = e.nativeEvent.coordinate;
     setForm(prev => ({ ...prev, latitude, longitude }));
+    setLocationSuccess(false);
     if (errors.latitude || errors.longitude) setErrors(prev => ({ ...prev, latitude: '', longitude: '' }));
+  };
+
+  const handleUseCurrentLocation = async () => {
+    setLocationLoading(true);
+    setLocationError(null);
+    setLocationSuccess(false);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setLocationError('Location permission denied.');
+        setLocationLoading(false);
+        return;
+      }
+      // Note: expo-location does not support a 'timeout' option for getCurrentPositionAsync.
+      // Location fetches may take several seconds depending on device and environment.
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      setForm(prev => ({ ...prev, latitude: loc.coords.latitude, longitude: loc.coords.longitude }));
+      setLocationSuccess(true);
+    } catch (err: any) {
+      setLocationError('Failed to get current location.');
+      setLocationSuccess(false);
+    }
+    setLocationLoading(false);
   };
 
   const validate = () => {
@@ -120,7 +149,7 @@ export default function RegisterHRScreen() {
             error={errors.password}
           />
           <TouchableOpacity
-            style={styles.paymentRow}
+            style={[styles.paymentRow]}
             onPress={() => handleChange('mockPayment', !form.mockPayment)}
             activeOpacity={0.7}
           >
@@ -131,6 +160,19 @@ export default function RegisterHRScreen() {
 
           {/* Map Picker for Company Location */}
           <Text style={styles.label}>Select Company Location</Text>
+          <Button
+            title={locationLoading ? 'Getting Location...' : 'Use Current Location'}
+            onPress={handleUseCurrentLocation}
+            isLoading={locationLoading}
+            style={{ marginBottom: 12 }}
+          />
+          {locationSuccess && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <MaterialCommunityIcons name="check-circle" size={20} color="green" style={{ marginRight: 6 }} />
+              <Text style={{ color: 'green', fontWeight: '500' }}>Location set successfully!</Text>
+            </View>
+          )}
+          {locationError && <Text style={styles.error}>{locationError}</Text>}
           <MapView
             style={{ width: '100%', height: SCREEN_WIDTH * 0.6, borderRadius: 12, marginVertical: 12 }}
             initialRegion={{
