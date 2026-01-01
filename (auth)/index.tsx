@@ -69,6 +69,7 @@ export default function LoginScreen() {
     setPassword(loginPassword);
     
     const success = await login(loginEmail, loginPassword);
+    console.log("User after login: ",userType, loginEmail, success);
     
     if (success) {
       router.replace('/(tabs)');
